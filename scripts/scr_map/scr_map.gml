@@ -9,6 +9,9 @@ function Map() constructor
 	width = 10;
 	height = 20;
 	
+	disableUpdate = false;
+	disableFalling = false;
+	disableInput = false;
 	mapData = array_create(width, undefined);
 	
 	entities = [];
@@ -50,10 +53,18 @@ function Map() constructor
 		}
 		
 		
-		draw_rectangle(0,0, width*TILESIZE, height*TILESIZE, true);
+		draw_rectangle(1,1, width*TILESIZE-2, height*TILESIZE-2, true);
 		
 		draw_set_halign(fa_center);
 		draw_text(width/2*TILESIZE, -2*TILESIZE, string(currentScore));
+		
+		if(disableUpdate)
+		{	
+			draw_set_alpha(.8);
+			draw_rectangle_color(0,0, width*TILESIZE, height*TILESIZE, c_black, c_black, c_black, c_black, false);
+			draw_set_alpha(1);
+			draw_text(width/2*TILESIZE, height/2*TILESIZE, "Score: \n" + string(currentScore) + "\n R to restart");
+		}
 		draw_set_halign(fa_left);
 		matrix_set(matrix_world, _mat);
 		
@@ -61,35 +72,51 @@ function Map() constructor
 	
 	static Update = function()
 	{
-		currentScore++;
-		var _i = 0; 
-		while(_i < array_length(entities))
-		{ 
-			entities[_i].Update();
-			_i++;
-		}
 		
-		var _i = 0; 
-		repeat(width*height)
+		if(keyboard_check_pressed(ord("R"))) room_restart();
+		if (!disableUpdate)
 		{
-			if(mapData[_i % width][_i div width] != undefined) mapData[_i % width][_i div width].Update();
-			_i++;
-		}
-		
-		
-		var _c = 0, _i = 0;
-		repeat(width)
-		{
-			if mapData[_i][height-1] _c++;
-			_i++;
-		}
-		
-		if (_c == width){
-			var _i = 0;
-			repeat(width)
+			var _n = 1+currentScore*0.0005;
+			currentScore++;
+			repeat(_n)
 			{
-				mapData[_i][height-1] = undefined;
-				_i++;
+				var _c = 0, _i = 0;
+				repeat(width)
+				{
+					if mapData[_i][height-1] _c++;
+					_i++;
+				}
+		
+				if (_c == width){
+					var _i = 0;
+					repeat(width)
+					{
+						mapData[_i][height-1] = undefined;
+						_i++;
+					}
+					currentScore += 200;
+				}
+			
+				var _i = 0; 
+				while(_i < array_length(entities))
+				{ 
+					entities[_i].Update();
+					_i++;
+				}
+			
+				var _i = 0; 
+				while(_i < array_length(entities))
+				{ 
+					entities[_i].UpdateEnd();
+					_i++;
+				}
+			
+				var _i = width*height-1; 
+				repeat(width*height)
+				{
+					if(mapData[_i % width][_i div width] != undefined) mapData[_i % width][_i div width].Update();
+					_i--;
+				}
 			}
 		}
 	}
@@ -117,7 +144,7 @@ function Map() constructor
 	
 }
 
-function Player(xx=0,yy=0) constructor
+function Player(xx=0,yy=0, type=1) constructor
 {
 	x = xx;
 	y = yy;
@@ -126,6 +153,12 @@ function Player(xx=0,yy=0) constructor
 	
 	pushingBlock = undefined;
 	pushingDir = 0;
+	
+	jumpTime = 25;
+	jumpTimer = 0;
+	
+	facing = 1;
+	self.type = type;
 	
 	static _OnGround = function()
 	{
@@ -142,13 +175,16 @@ function Player(xx=0,yy=0) constructor
 			if (_map.mapData[x+1][y] == undefined)
 			{
 				x++;
+				facing = 1;
 			}
 			//push block
 			else if (_OnGround() && _map.mapData[x+1][y-1] == undefined && x != _map.width-2 && _map.mapData[x+2][y] == undefined)
 			{
 				pushingBlock = _map.mapData[x+1][y];
+				_map.disableFalling = true;
 				_map.mapData[x+1][y] = undefined;
 				pushingDir = 1;
+				facing = 1;
 				x++;
 			}
 		}
@@ -162,12 +198,15 @@ function Player(xx=0,yy=0) constructor
 			if (_map.mapData[x-1][y] == undefined)
 			{
 				x--;
+				facing = -1;
 			}
 			else if (_OnGround() && _map.mapData[x-1][y-1] == undefined && x != 1 && _map.mapData[x-2][y] == undefined)
 			{
 				pushingBlock = _map.mapData[x-1][y];
+				_map.disableFalling = true;
 				_map.mapData[x-1][y] = undefined;
 				pushingDir = -1;
+				facing = -1;
 				x--;
 			}
 		}
@@ -194,29 +233,20 @@ function Player(xx=0,yy=0) constructor
 	static Draw = function()
 	{
 		if (pushingBlock != undefined) pushingBlock.Draw();
-		draw_sprite(spr_player, 0, smoothX*TILESIZE, smoothY*TILESIZE);
+		draw_sprite_ext(spr_player, 0, smoothX*TILESIZE+TILESIZE/2, smoothY*TILESIZE,facing,1,0,c_white,1);
 	}
 	
 	static Update = function()
 	{
 		var _map = obj_game.map;
-		if(_map.mapData[x][y] != undefined) 
-		{
-			if (!_OnGround())
-			{
-				_map.mapData[x][y] = undefined;
-			}
-			else
-			{
-				room_restart();
-			}
-		}
-	
 		if (pushingBlock != undefined)
 		{
 			pushingBlock.x = smoothX+pushingDir;
 			pushingBlock.y = smoothY;
 		}
+		
+		if keyboard_check_pressed(vk_space) jumpTimer = jumpTime;
+		jumpTimer = max(0, jumpTimer-1);
 		
 		if (abs(x-smoothX) < .1 && abs(y-smoothY) < .1)
 		{
@@ -227,25 +257,48 @@ function Player(xx=0,yy=0) constructor
 				var _blk = new FallingBlock(x+pushingDir,y, pushingBlock.blockType);
 				_map.AddEntity(_blk);
 				pushingBlock = undefined;
+				_map.disableFalling = false;
 				pushingDir = 0;
 			}
-			else
+			else if (!_map.disableInput)
 			{
-				if keyboard_check(vk_right) _MoveRight();
+				if (jumpTimer > 0 && _OnGround())
+				{
+					_MoveUp();
+					jumpTimer = 0;
+				}
+				else if keyboard_check(vk_right) _MoveRight();
 				else if keyboard_check(vk_left) _MoveLeft();
 				else _MoveDown();
-			
-				if (keyboard_check_pressed(vk_up) && _OnGround()) _MoveUp();
 			}
 			
 		}
 		
-		
 		x = clamp(x, 0, obj_game.map.width-1);
 		y = clamp(y, 0, obj_game.map.height-1);
 		
-		smoothX = lerp(smoothX, x, .1);
-		smoothY = lerp(smoothY, y, .1);
+		
+	}
+	
+	static UpdateEnd = function()
+	{
+		var _map = obj_game.map;
+		if(_map.mapData[x][y] != undefined) 
+		{
+			if (!_OnGround())
+			{
+				_map.mapData[x][y] = undefined;
+				y++;
+			}
+			else
+			{
+				_map.disableUpdate = true;
+				return;
+			}
+		}
+		
+		smoothX = lerp(smoothX, x, .08);
+		smoothY = lerp(smoothY, y, .08);
 	}
 }
 
@@ -276,35 +329,40 @@ function FallingBlock(xx, yy, type = 1) constructor
 	
 	static Update = function()
 	{
+		var _map = obj_game.map;
+		if (!_map.disableFalling)
+		{
+			if (abs(y-smoothY) < .1)
+			{
+		
+				var _map = obj_game.map;
+			
+				if (!_OnGround() && _map.mapData[x][y] != undefined)
+				{
+					_map.mapData[x][y] = undefined;
+					y++;
+					_map.mapData[x][y] = collisionBlock;
+				}
+				else
+				{
+					collisionBlock.x = x;
+					collisionBlock.y = y;
+					collisionBlock.updateDisabled = false;
+					_map.RemoveEntity(self);
+				}
+			
+			
+			}
+		}
+	}
+	
+	static UpdateEnd = function()
+	{
 		collisionBlock.x = smoothX;
 		collisionBlock.y = smoothY;
-	
 		
-		if (abs(y-smoothY) < .1)
-		{
-		
-			var _map = obj_game.map;
-			
-			if (!_OnGround() && _map.mapData[x][y] != undefined)
-			{
-				_map.mapData[x][y] = undefined;
-				y++;
-				_map.mapData[x][y] = collisionBlock;
-			}
-			else
-			{
-				collisionBlock.x = x;
-				collisionBlock.y = y;
-				collisionBlock.updateDisabled = false;
-				_map.RemoveEntity(self);
-			}
-			
-			
-		}
-		
-		smoothX = lerp(smoothX, x, .1);
-		smoothY = lerp(smoothY, y, .1);
-
+		smoothX = lerp(smoothX, x, .08);
+		smoothY = lerp(smoothY, y, .08);
 	}
 }
 
@@ -367,8 +425,8 @@ function Boss() constructor
 		switch(state)
 		{
 			case BossState.drop:
-				x = lerp(x, dropX, .01+_map.currentScore*.0001);
-				y = lerp(y, 0, .01+_map.currentScore*.0001);
+				x = lerp(x, dropX, .02);
+				y = lerp(y, 0, .02);
 				
 				if (abs(dropX-x) < .1 && abs(y) < .1)
 				{
@@ -383,8 +441,8 @@ function Boss() constructor
 		
 			case BossState.pickup:
 				
-				x = lerp(x, dropX,.01+ _map.currentScore*.0001);
-				y = lerp(y, -4, .01+_map.currentScore*.0001);
+				x = lerp(x, dropX,.02);
+				y = lerp(y, -4, .02);
 				
 				if (y < -3.9)
 				{
@@ -395,5 +453,10 @@ function Boss() constructor
 				break;
 		}
 		
+	}
+	
+	static UpdateEnd = function()
+	{
+
 	}
 }
