@@ -87,7 +87,7 @@ function Map(players=1) constructor
 		if(keyboard_check_pressed(ord("R"))) room_restart();
 		if (!disableUpdate)
 		{
-			var _n = 1+currentScore*0.0005;
+			var _n = 1+currentScore*0.0001;
 			currentScore++;
 			repeat(_n)
 			{
@@ -171,8 +171,11 @@ function Player(xx=0,yy=0, type=1) constructor
 	pushingBlock = undefined;
 	pushingDir = 0;
 	
-	jumpTime = 25;
-	jumpTimer = 0;
+	vinput = 0;
+	hinput = 0;
+	
+	flying = false;
+	flyDir = 0;
 	
 	facing = 1;
 	self.type = type;
@@ -286,17 +289,40 @@ function Player(xx=0,yy=0, type=1) constructor
 		
 		if (type = 1)
 		{
-			if keyboard_check_pressed(vk_up) jumpTimer = jumpTime;
+			if keyboard_check_pressed(vk_up) vinput = -1;
 		}
 		else
 		{
-			if keyboard_check_pressed(ord("W")) jumpTimer = jumpTime;
+			if keyboard_check_pressed(ord("W")) vinput = -1;
+			
 		}
-		jumpTimer = max(0, jumpTimer-1);
+		
+		if (abs(x-smoothX) < .1)
+		{
+			var _in = 0;
+			if (type = 1)
+			{
+				_in = keyboard_check(vk_right)-keyboard_check(vk_left);
+			}
+			else
+			{
+				_in = keyboard_check(ord("D"))-keyboard_check(ord("A"));
+			}
+		
+			if(_in != 0)
+			{
+				hinput = _in;
+			}
+		}
 		
 		if (abs(x-smoothX) < .1 && abs(y-smoothY) < .1)
 		{
-			
+			var _turnedInAir = false;
+			if(flying && flyDir != hinput)
+			{
+				_turnedInAir = true;
+				flying = false;
+			}
 			
 			if (pushingBlock != undefined)
 			{
@@ -308,28 +334,42 @@ function Player(xx=0,yy=0, type=1) constructor
 			}
 			else if (!_map.disableInput)
 			{
-				if (jumpTimer > 0 && _OnGround())
+				if (vinput = -1 && _OnGround())
 				{
 					_MoveUp();
-					jumpTimer = 0;
+					vinput = 0;
 				}
 				else
 				{
-					if (type = 1)
+					if (!_turnedInAir && hinput == 1)
 					{
-						if keyboard_check(vk_right) _MoveRight();
-						else if keyboard_check(vk_left) _MoveLeft();
-						else _MoveDown();
+						_MoveRight();
+						hinput = 0;
+						vinput = 0;
+						if (!_OnGround())
+						{
+							flying = true;
+							flyDir = 1;
+						}
 					}
-					else
+					else if (!_turnedInAir && hinput == -1)
 					{
-						if keyboard_check(ord("D")) _MoveRight();
-						else if keyboard_check(ord("A")) _MoveLeft();
-						else _MoveDown();
+						_MoveLeft();
+						hinput = 0;
+						vinput = 0;
+						
+						if (!_OnGround())
+						{
+							flying = true;
+							flyDir = -1;
+						}
 					}
+					else _MoveDown();
+					
 				}
 			}
 			
+			vinput = 0;
 		}
 		
 		x = clamp(x, 0, obj_game.map.width-1);
@@ -484,8 +524,8 @@ function Boss() constructor
 		switch(state)
 		{
 			case BossState.drop:
-				x = lerp(x, dropX, .02);
-				y = lerp(y, 0, .02);
+				x = lerp(x, dropX, .02+_map.currentScore*0.00001);
+				y = lerp(y, 0, .02+_map.currentScore*0.00001);
 				
 				if (abs(dropX-x) < .1 && abs(y) < .1)
 				{
@@ -500,8 +540,8 @@ function Boss() constructor
 		
 			case BossState.pickup:
 				
-				x = lerp(x, dropX,.02);
-				y = lerp(y, -4, .02);
+				x = lerp(x, dropX,.02+_map.currentScore*0.00001);
+				y = lerp(y, -4, .02+_map.currentScore*0.00001);
 				
 				if (y < -3.9)
 				{
