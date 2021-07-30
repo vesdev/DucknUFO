@@ -1,1 +1,2 @@
+camera.Update();
 map.Update();

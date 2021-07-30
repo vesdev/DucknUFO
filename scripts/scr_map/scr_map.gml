@@ -20,6 +20,8 @@ function Map() constructor
 		0,0,0,1,
 	];
 	
+	currentScore = 0;
+	
 	var _i = 0; repeat(array_length(mapData))
 	{
 		mapData[_i] = array_create(height, undefined);
@@ -49,13 +51,17 @@ function Map() constructor
 		
 		
 		draw_rectangle(0,0, width*TILESIZE, height*TILESIZE, true);
+		
+		draw_set_halign(fa_center);
+		draw_text(width/2*TILESIZE, -2*TILESIZE, string(currentScore));
+		draw_set_halign(fa_left);
 		matrix_set(matrix_world, _mat);
 		
 	}
 	
 	static Update = function()
 	{
-		
+		currentScore++;
 		var _i = 0; 
 		while(_i < array_length(entities))
 		{ 
@@ -111,10 +117,10 @@ function Map() constructor
 	
 }
 
-function Player() constructor
+function Player(xx=0,yy=0) constructor
 {
-	x = 0;
-	y = 0;
+	x = xx;
+	y = yy;
 	smoothX = x;
 	smoothY = y;
 	
@@ -138,7 +144,7 @@ function Player() constructor
 				x++;
 			}
 			//push block
-			else if (_OnGround() && _map.mapData[x+1][y-1] == undefined && _map.mapData[x+2][y] == undefined)
+			else if (_OnGround() && _map.mapData[x+1][y-1] == undefined && x != _map.width-2 && _map.mapData[x+2][y] == undefined)
 			{
 				pushingBlock = _map.mapData[x+1][y];
 				_map.mapData[x+1][y] = undefined;
@@ -157,8 +163,7 @@ function Player() constructor
 			{
 				x--;
 			}
-			//push block
-			else if (_OnGround() && _map.mapData[x-1][y-1] == undefined && _map.mapData[x-2][y] == undefined)
+			else if (_OnGround() && _map.mapData[x-1][y-1] == undefined && x != 1 && _map.mapData[x-2][y] == undefined)
 			{
 				pushingBlock = _map.mapData[x-1][y];
 				_map.mapData[x-1][y] = undefined;
@@ -194,6 +199,19 @@ function Player() constructor
 	
 	static Update = function()
 	{
+		var _map = obj_game.map;
+		if(_map.mapData[x][y] != undefined) 
+		{
+			if (!_OnGround())
+			{
+				_map.mapData[x][y] = undefined;
+			}
+			else
+			{
+				room_restart();
+			}
+		}
+	
 		if (pushingBlock != undefined)
 		{
 			pushingBlock.x = smoothX+pushingDir;
@@ -202,11 +220,10 @@ function Player() constructor
 		
 		if (abs(x-smoothX) < .1 && abs(y-smoothY) < .1)
 		{
-			var _map = obj_game.map;
+			
 			
 			if (pushingBlock != undefined)
 			{
-				show_debug_message("wow");
 				var _blk = new FallingBlock(x+pushingDir,y, pushingBlock.blockType);
 				_map.AddEntity(_blk);
 				pushingBlock = undefined;
@@ -214,11 +231,11 @@ function Player() constructor
 			}
 			else
 			{
-			if keyboard_check(vk_right) _MoveRight();
-			else if keyboard_check(vk_left) _MoveLeft();
-			else _MoveDown();
+				if keyboard_check(vk_right) _MoveRight();
+				else if keyboard_check(vk_left) _MoveLeft();
+				else _MoveDown();
 			
-			if (keyboard_check_pressed(vk_space) && _OnGround()) _MoveUp();
+				if (keyboard_check_pressed(vk_up) && _OnGround()) _MoveUp();
 			}
 			
 		}
@@ -226,12 +243,6 @@ function Player() constructor
 		
 		x = clamp(x, 0, obj_game.map.width-1);
 		y = clamp(y, 0, obj_game.map.height-1);
-		
-		if (keyboard_check_pressed(vk_enter))
-		{
-			var _blk = new FallingBlock(x,y);
-			obj_game.map.AddEntity(_blk);
-		}
 		
 		smoothX = lerp(smoothX, x, .1);
 		smoothY = lerp(smoothY, y, .1);
@@ -274,7 +285,7 @@ function FallingBlock(xx, yy, type = 1) constructor
 		
 			var _map = obj_game.map;
 			
-			if (!_OnGround())
+			if (!_OnGround() && _map.mapData[x][y] != undefined)
 			{
 				_map.mapData[x][y] = undefined;
 				y++;
@@ -342,12 +353,12 @@ function Boss() constructor
 	
 	state = BossState.pickup;
 	
-	dropX = 0;
+	dropX = x;
 	
 	static Draw = function()
 	{
 		
-		draw_sprite(spr_boss, 0, x*TILESIZE, y*TILESIZE);
+		draw_sprite(spr_boss, 0, x*TILESIZE+TILESIZE/2, y*TILESIZE);
 	}
 	
 	static Update = function()
@@ -356,17 +367,26 @@ function Boss() constructor
 		switch(state)
 		{
 			case BossState.drop:
-				x = lerp(x, dropX, .1);
-				y = lerp(y, 0, .1);
+				x = lerp(x, dropX, .01+_map.currentScore*.0001);
+				y = lerp(y, 0, .01+_map.currentScore*.0001);
+				
+				if (abs(dropX-x) < .1 && abs(y) < .1)
+				{
+				
+					var _blk = new FallingBlock(dropX,0);
+					obj_game.map.AddEntity(_blk);
+					state = BossState.pickup;
+					
+				}
 				
 				break;
 		
 			case BossState.pickup:
 				
-				x = lerp(x, 0, .1);
-				y = lerp(y, -4, .1);
+				x = lerp(x, dropX,.01+ _map.currentScore*.0001);
+				y = lerp(y, -4, .01+_map.currentScore*.0001);
 				
-				if (x < .1 && y < .1)
+				if (y < -3.9)
 				{
 					dropX = irandom(_map.width-1);
 					state = BossState.drop;
