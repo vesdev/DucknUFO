@@ -87,7 +87,7 @@ function Map(players=1) constructor
 		if(keyboard_check_pressed(ord("R"))) room_restart();
 		if (!disableUpdate)
 		{
-			var _n = 1+currentScore*0.0001;
+			var _n = 1.5+currentScore*0.0001;
 			currentScore++;
 			repeat(_n)
 			{
@@ -168,6 +168,9 @@ function Player(xx=0,yy=0, type=1) constructor
 	smoothX = x;
 	smoothY = y;
 	
+	sprite = spr_player;
+	frame = 0;
+	
 	pushingBlock = undefined;
 	pushingDir = 0;
 	
@@ -209,7 +212,9 @@ function Player(xx=0,yy=0, type=1) constructor
 				!_MeetingEntities(x+1, y))
 			{
 				x++;
-				
+				frame++;
+				if (frame >= 2) frame = 0;
+				return true;
 			}
 			//push block
 			else if (_OnGround() && _map.mapData[x+1][y-1] == undefined && 
@@ -223,8 +228,12 @@ function Player(xx=0,yy=0, type=1) constructor
 				_map.mapData[x+1][y] = undefined;
 				pushingDir = 1;
 				x++;
+				frame++;
+				if (frame >= 2) frame = 0;
+				return true;
 			}
 		}
+		return false;
 	}
 	
 	static _MoveLeft = function()
@@ -237,6 +246,9 @@ function Player(xx=0,yy=0, type=1) constructor
 				!_MeetingEntities(x-1, y))
 			{
 				x--;
+				frame++;
+				if (frame >= 2) frame = 0;
+				return true;
 			}
 			else if (_OnGround() && _map.mapData[x-1][y-1] == undefined && 
 				x != 1 && _map.mapData[x-2][y] == undefined &&
@@ -248,8 +260,12 @@ function Player(xx=0,yy=0, type=1) constructor
 				_map.mapData[x-1][y] = undefined;
 				pushingDir = -1;
 				x--;
+				frame++;
+				if (frame >= 2) frame = 0;
+				return true;
 			}
 		}
+		return false;
 	}
 	
 	static _MoveDown = function()
@@ -275,7 +291,7 @@ function Player(xx=0,yy=0, type=1) constructor
 	static Draw = function()
 	{
 		if (pushingBlock != undefined) pushingBlock.Draw();
-		draw_sprite_ext(spr_player, type-1, smoothX*TILESIZE+TILESIZE/2, smoothY*TILESIZE,facing,1,0,c_white,1);
+		draw_sprite_ext(sprite, frame, smoothX*TILESIZE+TILESIZE/2, smoothY*TILESIZE,facing,1,0, type == 1 ? c_red : c_blue, 1);
 	}
 	
 	static Update = function()
@@ -346,10 +362,12 @@ function Player(xx=0,yy=0, type=1) constructor
 						_MoveRight();
 						hinput = 0;
 						vinput = 0;
+						
 						if (!_OnGround())
 						{
 							flying = true;
 							flyDir = 1;
+							sprite = spr_player_fly;
 						}
 					}
 					else if (!_turnedInAir && hinput == -1)
@@ -362,10 +380,12 @@ function Player(xx=0,yy=0, type=1) constructor
 						{
 							flying = true;
 							flyDir = -1;
+							sprite = spr_player_fly;
 						}
 					}
 					else _MoveDown();
 					
+					if (!flying) sprite = spr_player;
 				}
 			}
 			
@@ -386,6 +406,7 @@ function Player(xx=0,yy=0, type=1) constructor
 			if (!_OnGround())
 			{
 				_map.mapData[x][y] = undefined;
+				repeat(10) part_particles_create(G.PartSys, x*TILESIZE+TILESIZE/2,y*TILESIZE+TILESIZE*4, G.PartDust, 1);
 				y++;
 			}
 			else
