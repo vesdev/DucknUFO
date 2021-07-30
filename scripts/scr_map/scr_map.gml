@@ -1,13 +1,16 @@
 #macro TILESIZE 16
 
 
-function Map() constructor
+function Map(players=1) constructor
 {
 	
 	x = 0;
 	y = 64;
 	width = 10;
 	height = 20;
+	
+	self.players = players;
+	loser = 0;
 	
 	disableUpdate = false;
 	disableFalling = false;
@@ -63,7 +66,15 @@ function Map() constructor
 			draw_set_alpha(.8);
 			draw_rectangle_color(0,0, width*TILESIZE, height*TILESIZE, c_black, c_black, c_black, c_black, false);
 			draw_set_alpha(1);
-			draw_text(width/2*TILESIZE, height/2*TILESIZE, "Score: \n" + string(currentScore) + "\n R to restart");
+			if (players = 1)
+			{
+				draw_text(width/2*TILESIZE, height/2*TILESIZE, "Score: \n" + string(currentScore) + "\n R to restart");
+			}
+			else
+			{
+				var _base = loser = 1 ? "Red Won" : "Blue Won";
+				draw_text(width/2*TILESIZE, height/2*TILESIZE, _base + "\n Score: \n" + string(currentScore) + "\n R to restart");
+			}
 		}
 		draw_set_halign(fa_left);
 		matrix_set(matrix_world, _mat);
@@ -142,6 +153,12 @@ function Map() constructor
 		
 	}
 	
+	var _i = 0; repeat(players)
+	{
+		AddEntity(new Player(floor(width/2), height-1-_i, _i+1));
+		_i++;
+	}
+	
 }
 
 function Player(xx=0,yy=0, type=1) constructor
@@ -160,10 +177,23 @@ function Player(xx=0,yy=0, type=1) constructor
 	facing = 1;
 	self.type = type;
 	
+	static _MeetingEntities = function(x,y)
+	{
+		var _map = obj_game.map;
+		var _i = 0;
+		repeat(array_length(_map.entities))
+		{
+			var _ent = _map.entities[_i];
+			if (_ent.x == x && _ent.y == y) return true;
+			_i++;
+		}
+		return false;
+	}
+	
 	static _OnGround = function()
 	{
 		var _map = obj_game.map;
-		return (y == _map.height-1 || _map.mapData[x][y+1] != undefined);
+		return (y == _map.height-1 || _map.mapData[x][y+1] != undefined || _MeetingEntities(x, y+1));
 	}
 	
 	static _MoveRight = function()
@@ -171,20 +201,24 @@ function Player(xx=0,yy=0, type=1) constructor
 		var _map = obj_game.map;
 		if (x < _map.width-1)
 		{
-			
-			if (_map.mapData[x+1][y] == undefined)
+			facing = 1;
+			if (_map.mapData[x+1][y] == undefined &&
+				!_MeetingEntities(x+1, y))
 			{
 				x++;
-				facing = 1;
+				
 			}
 			//push block
-			else if (_OnGround() && _map.mapData[x+1][y-1] == undefined && x != _map.width-2 && _map.mapData[x+2][y] == undefined)
+			else if (_OnGround() && _map.mapData[x+1][y-1] == undefined && 
+				x != _map.width-2 && _map.mapData[x+2][y] == undefined &&
+				!_MeetingEntities(x+1, y) &&
+				!_MeetingEntities(x+2, y)
+				)
 			{
 				pushingBlock = _map.mapData[x+1][y];
 				_map.disableFalling = true;
 				_map.mapData[x+1][y] = undefined;
 				pushingDir = 1;
-				facing = 1;
 				x++;
 			}
 		}
@@ -195,18 +229,21 @@ function Player(xx=0,yy=0, type=1) constructor
 		var _map = obj_game.map;
 		if (x > 0)
 		{
-			if (_map.mapData[x-1][y] == undefined)
+			facing = -1;
+			if (_map.mapData[x-1][y] == undefined &&
+				!_MeetingEntities(x-1, y))
 			{
 				x--;
-				facing = -1;
 			}
-			else if (_OnGround() && _map.mapData[x-1][y-1] == undefined && x != 1 && _map.mapData[x-2][y] == undefined)
+			else if (_OnGround() && _map.mapData[x-1][y-1] == undefined && 
+				x != 1 && _map.mapData[x-2][y] == undefined &&
+				!_MeetingEntities(x-1, y) &&
+				!_MeetingEntities(x-2, y))
 			{
 				pushingBlock = _map.mapData[x-1][y];
 				_map.disableFalling = true;
 				_map.mapData[x-1][y] = undefined;
 				pushingDir = -1;
-				facing = -1;
 				x--;
 			}
 		}
@@ -215,7 +252,8 @@ function Player(xx=0,yy=0, type=1) constructor
 	static _MoveDown = function()
 	{
 		var _map = obj_game.map;
-		if (y < _map.height-1 && !_map.mapData[x][y+1])
+		if (y < _map.height-1 && !_map.mapData[x][y+1] &&
+			!_MeetingEntities(x, y+1))
 		{
 			y++;
 		}
@@ -224,7 +262,8 @@ function Player(xx=0,yy=0, type=1) constructor
 	static _MoveUp = function()
 	{
 		var _map = obj_game.map;
-		if (y > 0 && !_map.mapData[x][y-1])
+		if (y > 0 && !_map.mapData[x][y-1] &&
+			!_MeetingEntities(x, y-1))
 		{
 			y--;
 		}
@@ -233,7 +272,7 @@ function Player(xx=0,yy=0, type=1) constructor
 	static Draw = function()
 	{
 		if (pushingBlock != undefined) pushingBlock.Draw();
-		draw_sprite_ext(spr_player, 0, smoothX*TILESIZE+TILESIZE/2, smoothY*TILESIZE,facing,1,0,c_white,1);
+		draw_sprite_ext(spr_player, type-1, smoothX*TILESIZE+TILESIZE/2, smoothY*TILESIZE,facing,1,0,c_white,1);
 	}
 	
 	static Update = function()
@@ -245,7 +284,14 @@ function Player(xx=0,yy=0, type=1) constructor
 			pushingBlock.y = smoothY;
 		}
 		
-		if keyboard_check_pressed(vk_space) jumpTimer = jumpTime;
+		if (type = 1)
+		{
+			if keyboard_check_pressed(vk_up) jumpTimer = jumpTime;
+		}
+		else
+		{
+			if keyboard_check_pressed(ord("W")) jumpTimer = jumpTime;
+		}
 		jumpTimer = max(0, jumpTimer-1);
 		
 		if (abs(x-smoothX) < .1 && abs(y-smoothY) < .1)
@@ -267,9 +313,21 @@ function Player(xx=0,yy=0, type=1) constructor
 					_MoveUp();
 					jumpTimer = 0;
 				}
-				else if keyboard_check(vk_right) _MoveRight();
-				else if keyboard_check(vk_left) _MoveLeft();
-				else _MoveDown();
+				else
+				{
+					if (type = 1)
+					{
+						if keyboard_check(vk_right) _MoveRight();
+						else if keyboard_check(vk_left) _MoveLeft();
+						else _MoveDown();
+					}
+					else
+					{
+						if keyboard_check(ord("D")) _MoveRight();
+						else if keyboard_check(ord("A")) _MoveLeft();
+						else _MoveDown();
+					}
+				}
 			}
 			
 		}
@@ -293,6 +351,7 @@ function Player(xx=0,yy=0, type=1) constructor
 			else
 			{
 				_map.disableUpdate = true;
+				_map.loser = type;
 				return;
 			}
 		}
