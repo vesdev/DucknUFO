@@ -177,14 +177,14 @@ function Player(xx=0,yy=0, type=1) constructor
 	facing = 1;
 	self.type = type;
 	
-	static _MeetingEntities = function(x,y)
+	static _MeetingEntities = function(xx,yy)
 	{
 		var _map = obj_game.map;
 		var _i = 0;
 		repeat(array_length(_map.entities))
 		{
 			var _ent = _map.entities[_i];
-			if (_ent.x == x && _ent.y == y) return true;
+			if (floor(_ent.x) == floor(xx) && floor(_ent.y) == floor(yy)) return true;
 			_i++;
 		}
 		return false;

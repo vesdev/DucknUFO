@@ -1,6 +1,6 @@
 randomize();
 
-map = new Map(2);
+map = new Map(global.playerCount);
 var _h = map.height*TILESIZE+64;
 
 

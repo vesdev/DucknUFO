@@ -10,6 +10,7 @@
     {"id":{"name":"rm_init","path":"rooms/rm_init/rm_init.yy",},"order":3,},
     {"id":{"name":"spr_boss","path":"sprites/spr_boss/spr_boss.yy",},"order":2,},
     {"id":{"name":"rm_game","path":"rooms/rm_game/rm_game.yy",},"order":2,},
+    {"id":{"name":"init","path":"scripts/init/init.yy",},"order":2,},
     {"id":{"name":"scr_map","path":"scripts/scr_map/scr_map.yy",},"order":0,},
   ],
   "Options": [
