@@ -310,6 +310,7 @@ function Player(xx=0,yy=0, type=1) constructor
 			pushingBlock.y = smoothY;
 		}
 		
+		//input
 		if (type = 1)
 		{
 			if keyboard_check_pressed(vk_up) vinput = -1;
@@ -338,6 +339,7 @@ function Player(xx=0,yy=0, type=1) constructor
 			}
 		}
 		
+		//movement logic
 		if (abs(x-smoothX) < .1 && abs(y-smoothY) < .1)
 		{
 			var _turnedInAir = false;
@@ -347,6 +349,7 @@ function Player(xx=0,yy=0, type=1) constructor
 				flying = false;
 			}
 			
+			//block push animation finished
 			if (pushingBlock != undefined)
 			{
 				var _blk = new FallingBlock(x+pushingDir,y, pushingBlock.blockType);
@@ -355,12 +358,16 @@ function Player(xx=0,yy=0, type=1) constructor
 				_map.disableFalling = false;
 				pushingDir = 0;
 			}
-			else if (!_map.disableInput)
+			else if (!_map.disableInput) //move player
 			{
 				if (vinput = -1)
 				{
+					//jumping
 					if (y < _map.height-1 && _map.mapData[x][y+1] != undefined && _map.mapData[x][y+1].blockType == 3)
 					{
+						//spring jump
+						_map.mapData[x][y+1].frame = 1;
+						_map.mapData[x][y+1].animationPlay = true;
 						_MoveUp();
 						UpdateEnd();
 						_MoveUp();
@@ -369,6 +376,7 @@ function Player(xx=0,yy=0, type=1) constructor
 					}
 					else if (_OnGround())
 					{
+						//normal jump
 						_MoveUp();
 						vinput = 0;
 					}
@@ -519,19 +527,43 @@ function Block(type = 1) constructor
 	
 	blockType = type;
 	updateDisabled = false;
+	frame = 0;
+	
+	frameTime = 20;
+	frameTimer = 0;
+	
+	loop = type != 3;
+	animationPlay = false;
 	
 	static Draw = function()
 	{
-		
-		draw_sprite(spr_block, global.BlockSprites[blockType], x*TILESIZE, y*TILESIZE);
+		draw_sprite(global.BlockSprites[blockType], frame, x*TILESIZE, y*TILESIZE);
 	}
 	
 	static Update = function()
 	{
+		frameTimer++;
+		if (frameTimer >= frameTime)
+		{
+			frameTimer = 0;
+			if (loop || animationPlay)
+			{
+				frame++;
+				animationPlay = true;
+			}
+			
+			show_debug_message(frame);
+			if(frame >= sprite_get_number(global.BlockSprites[blockType]))
+			{	
+				frame = 0;
+				animationPlay = false;
+			}
+		}
+		
 		if (!updateDisabled)
 		{
 			var _map = obj_game.map;
-		
+			
 			if (y < _map.height-1 && _map.mapData[x][y+1] == undefined)
 			{
 				_map.mapData[x][y] = undefined;
@@ -573,8 +605,8 @@ function Boss() constructor
 		switch(state)
 		{
 			case BossState.drop:
-				x = lerp(x, dropX, .02+_map.currentScore*0.00001);
-				y = lerp(y, 0, .02+_map.currentScore*0.00001);
+				x = lerp(x, dropX, .02+_map.currentScore*0.000001);
+				y = lerp(y, 0, .02+_map.currentScore*0.000001);
 				
 				if (abs(dropX-x) < .1 && abs(y) < .1)
 				{
@@ -601,8 +633,8 @@ function Boss() constructor
 		
 			case BossState.pickup:
 				
-				x = lerp(x, dropX,.02+_map.currentScore*0.00001);
-				y = lerp(y, -4, .02+_map.currentScore*0.00001);
+				x = lerp(x, dropX,.02+_map.currentScore*0.000005);
+				y = lerp(y, -4, .02+_map.currentScore*0.000005);
 				
 				if (y < -3.9)
 				{
