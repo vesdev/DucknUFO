@@ -1,6 +1,8 @@
 {
   "resources": [
+    {"id":{"name":"spr_block_unbreakable","path":"sprites/spr_block_unbreakable/spr_block_unbreakable.yy",},"order":7,},
     {"id":{"name":"obj_menu","path":"objects/obj_menu/obj_menu.yy",},"order":1,},
+    {"id":{"name":"spr_block_spring","path":"sprites/spr_block_spring/spr_block_spring.yy",},"order":8,},
     {"id":{"name":"spr_player_fly","path":"sprites/spr_player_fly/spr_player_fly.yy",},"order":1,},
     {"id":{"name":"spr_dust","path":"sprites/spr_dust/spr_dust.yy",},"order":4,},
     {"id":{"name":"obj_camera","path":"objects/obj_camera/obj_camera.yy",},"order":2,},
@@ -8,10 +10,12 @@
     {"id":{"name":"spr_block","path":"sprites/spr_block/spr_block.yy",},"order":0,},
     {"id":{"name":"spr_player","path":"sprites/spr_player/spr_player.yy",},"order":3,},
     {"id":{"name":"obj_game","path":"objects/obj_game/obj_game.yy",},"order":0,},
+    {"id":{"name":"spr_block_basic","path":"sprites/spr_block_basic/spr_block_basic.yy",},"order":5,},
     {"id":{"name":"rm_menu","path":"rooms/rm_menu/rm_menu.yy",},"order":1,},
     {"id":{"name":"rm_init","path":"rooms/rm_init/rm_init.yy",},"order":3,},
     {"id":{"name":"spr_boss","path":"sprites/spr_boss/spr_boss.yy",},"order":2,},
     {"id":{"name":"rm_game","path":"rooms/rm_game/rm_game.yy",},"order":2,},
+    {"id":{"name":"spr_empty","path":"sprites/spr_empty/spr_empty.yy",},"order":6,},
     {"id":{"name":"init","path":"scripts/init/init.yy",},"order":2,},
     {"id":{"name":"scr_map","path":"scripts/scr_map/scr_map.yy",},"order":0,},
   ],

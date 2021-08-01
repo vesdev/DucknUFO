@@ -425,7 +425,7 @@ function Player(xx=0,yy=0, type=1) constructor
 			{
 				//break block
 				_map.mapData[x][y] = undefined;
-				repeat(10) part_particles_create(G.PartSys, x*TILESIZE+TILESIZE/2,y*TILESIZE+TILESIZE*4, G.PartDust, 1);
+				repeat(10) part_particles_create(global.PartSys, x*TILESIZE+TILESIZE/2,y*TILESIZE+TILESIZE*4, global.PartDust, 1);
 				y++;
 			}
 			else
@@ -505,6 +505,13 @@ function FallingBlock(xx, yy, type = 1) constructor
 	}
 }
 
+global.BlockSprites = [
+	spr_empty,
+	spr_block_basic,
+	spr_block_unbreakable,
+	spr_block_spring
+];
+
 function Block(type = 1) constructor
 {
 	x = 0;
@@ -516,7 +523,7 @@ function Block(type = 1) constructor
 	static Draw = function()
 	{
 		
-		draw_sprite(spr_block, blockType, x*TILESIZE, y*TILESIZE);
+		draw_sprite(spr_block, global.BlockSprites[blockType], x*TILESIZE, y*TILESIZE);
 	}
 	
 	static Update = function()
