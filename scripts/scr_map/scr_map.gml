@@ -6,8 +6,8 @@ function Map(players=1) constructor
 	
 	x = 0;
 	y = 64;
-	width = 10;
-	height = 20;
+	width = 5;
+	height = 8;
 	
 	self.players = players;
 	loser = 0;
@@ -27,6 +27,9 @@ function Map(players=1) constructor
 	];
 	
 	currentScore = 0;
+	
+	
+	lineAnimation = 0;
 	
 	var _i = 0; repeat(array_length(mapData))
 	{
@@ -53,6 +56,15 @@ function Map(players=1) constructor
 			_i++;
 		}
 		
+		lineAnimation = lerp(lineAnimation, 0, .1);
+		if(lineAnimation > .1)
+		{
+			var _s = 5;
+			obj_camera.camera.x += random_range(-_s,_s);
+			obj_camera.camera.y += random_range(-_s,_s);
+			draw_rectangle_color(0,(height-1+(1-lineAnimation)*.5)*TILESIZE,width*TILESIZE, (height-(1-lineAnimation)*.5)*TILESIZE,0x19b546,0x19b546,0x19b546,0x19b546,false);
+		}
+		
 		var _i = 0; 
 		while(_i < array_length(entities))
 		{ 
@@ -72,12 +84,12 @@ function Map(players=1) constructor
 			draw_set_alpha(1);
 			if (players = 1)
 			{
-				draw_text(width/2*TILESIZE, height/2*TILESIZE, "Score: \n" + string(currentScore) + "\n R to restart");
+				draw_text_transformed(width/2*TILESIZE, height/2*TILESIZE, "Score:\n" + string(currentScore) + "\nR to restart", .5, .5, 0);
 			}
 			else
 			{
 				var _base = loser == 0 ? "Tie" : (loser == 1 ? "Green Won" : "Red Won");
-				draw_text(width/2*TILESIZE, height/2*TILESIZE, _base + "\n Score: \n" + string(currentScore) + "\n R to restart");
+				draw_text_transformed(width/2*TILESIZE, height/2*TILESIZE, _base + "\nScore:\n" + string(currentScore) + "\n R to restart", .5, .5, 0);
 			}
 		}
 		draw_set_halign(fa_left);
@@ -111,7 +123,7 @@ function Map(players=1) constructor
 						_i++;
 					}
 					currentScore += 1000;
-					
+					lineAnimation = 1;
 				}
 				
 				//update
@@ -190,6 +202,8 @@ function Player(xx=0,yy=0, type=1) constructor
 	facing = 1;
 	self.type = type;
 	
+	collidable = true;
+	
 	static _MeetingEntities = function(xx,yy)
 	{
 		var _map = obj_game.map;
@@ -197,7 +211,7 @@ function Player(xx=0,yy=0, type=1) constructor
 		repeat(array_length(_map.entities))
 		{
 			var _ent = _map.entities[_i];
-			if (floor(_ent.x) == floor(xx) && floor(_ent.y) == floor(yy)) return true;
+			if (_ent.collidable == true && floor(_ent.x) == floor(xx) && floor(_ent.y) == floor(yy)) return true;
 			_i++;
 		}
 		return false;
@@ -432,8 +446,11 @@ function Player(xx=0,yy=0, type=1) constructor
 			if (!_OnGround() && _map.mapData[x][y].blockType != 2)
 			{
 				//break block
+				var _s = 5;
+				obj_camera.camera.x += random_range(-_s,_s);
+				obj_camera.camera.y += random_range(-_s,_s);
 				_map.mapData[x][y] = undefined;
-				repeat(10) part_particles_create(global.PartSys, x*TILESIZE+TILESIZE/2,y*TILESIZE+TILESIZE*4, global.PartDust, 1);
+				repeat(5) part_particles_create(global.PartSys, x*TILESIZE+TILESIZE/2,y*TILESIZE+TILESIZE*4, global.PartDust, 1);
 				y++;
 			}
 			else
@@ -461,6 +478,8 @@ function FallingBlock(xx, yy, type = 1) constructor
 	collisionBlock.updateDisabled = true;
 	var _map = obj_game.map;
 	_map.mapData[x][y] = collisionBlock;
+	
+	collidable = false;
 	
 	static _OnGround = function()
 	{
@@ -552,7 +571,6 @@ function Block(type = 1) constructor
 				animationPlay = true;
 			}
 			
-			show_debug_message(frame);
 			if(frame >= sprite_get_number(global.BlockSprites[blockType]))
 			{	
 				frame = 0;
@@ -593,6 +611,8 @@ function Boss() constructor
 	
 	dropX = x;
 	
+	collidable = false;
+	
 	static Draw = function()
 	{
 		
@@ -618,7 +638,7 @@ function Boss() constructor
 						if (random(100) < 10) _t = 3;
 						else if (_map.currentScore > 5000)
 						{
-							if (random(100) < 20) _t = 2;
+							if (random(100) < 30) _t = 2;
 						}
 					}
 					
