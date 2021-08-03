@@ -6,4 +6,9 @@ camera.x = centerX;
 camera.y = centerY;
 camera.ScaleWindow(3);
 
+application_surface_draw_enable(false);
+u_texel = shader_get_uniform(sha_rim, "texel");
+
+surf = -1;
+
 room_goto(rm_menu);

@@ -40,14 +40,32 @@ function Map(players=1) constructor
 	
 	static Draw = function()
 	{
+		draw_set_font(fnt_basic);
 		var _mat = matrix_get(matrix_world);
 		mapMatrix[12] = x;
 		mapMatrix[13] = y;
 		matrix_set(matrix_world, matrix_multiply(_mat, mapMatrix));
 		
+		//draw_sprite_shadow(spr_pixel, 0, 0, 0, width*TILESIZE, height*TILESIZE);
+		//draw_sprite_rectangle(0,0, width*TILESIZE, height*TILESIZE, 0x1A1113, false);
+		
 		draw_set_halign(fa_center);
 			draw_text_color(width/2*TILESIZE, -2*TILESIZE, string(currentScore), 0x4210b3,0x4210b3,0x4210b3,0x4210b3,1);
 		draw_set_halign(fa_left);
+		
+		var _i = 0; 
+		repeat(width*height)
+		{
+			if(mapData[_i % width][_i div width] != undefined) mapData[_i % width][_i div width].DrawBegin();
+			_i++;
+		}
+		
+		var _i = 0; 
+		while(_i < array_length(entities))
+		{ 
+			entities[_i].DrawBegin();
+			_i++;
+		}
 		
 		var _i = 0; 
 		repeat(width*height)
@@ -62,7 +80,7 @@ function Map(players=1) constructor
 			var _s = 5;
 			obj_camera.camera.x += random_range(-_s,_s);
 			obj_camera.camera.y += random_range(-_s,_s);
-			draw_rectangle_color(0,(height-1+(1-lineAnimation)*.5)*TILESIZE,width*TILESIZE, (height-(1-lineAnimation)*.5)*TILESIZE,0x19b546,0x19b546,0x19b546,0x19b546,false);
+			draw_sprite_rectangle(0,(height-1+(1-lineAnimation)*.5)*TILESIZE,width*TILESIZE, (height-(1-lineAnimation)*.5)*TILESIZE,0x19b546,false);
 		}
 		
 		var _i = 0; 
@@ -72,8 +90,8 @@ function Map(players=1) constructor
 			_i++;
 		}
 		
-		
-		draw_rectangle_color(1,1, width*TILESIZE-2, height*TILESIZE-2, 0x4210b3, 0x4210b3, 0x4210b3,0x4210b3, true);
+		draw_sprite_rectangle(-2,-1, width*TILESIZE+1, height*TILESIZE, 0x4210b3, true);
+		draw_sprite_rectangle(-1,0, width*TILESIZE, height*TILESIZE-1, 0x4210b3, true);
 		
 		draw_set_halign(fa_center);
 		
@@ -84,12 +102,12 @@ function Map(players=1) constructor
 			draw_set_alpha(1);
 			if (players = 1)
 			{
-				draw_text_transformed(width/2*TILESIZE, height/2*TILESIZE, "Score:\n" + string(currentScore) + "\nR to restart", .5, .5, 0);
+				draw_text_transformed(width/2*TILESIZE, height/2*TILESIZE, "Score:\n" + string(currentScore) + "\nR to restart", .7, .7, 0);
 			}
 			else
 			{
 				var _base = loser == 0 ? "Tie" : (loser == 1 ? "Green Won" : "Red Won");
-				draw_text_transformed(width/2*TILESIZE, height/2*TILESIZE, _base + "\nScore:\n" + string(currentScore) + "\n R to restart", .5, .5, 0);
+				draw_text_transformed(width/2*TILESIZE, height/2*TILESIZE, _base + "\nScore:\n" + string(currentScore) + "\n R to restart", .7, .7, 0);
 			}
 		}
 		draw_set_halign(fa_left);
@@ -124,6 +142,7 @@ function Map(players=1) constructor
 					}
 					currentScore += 1000;
 					lineAnimation = 1;
+					audio_play_sound(snd_line, 0, 0);
 				}
 				
 				//update
@@ -241,16 +260,21 @@ function Player(xx=0,yy=0, type=1) constructor
 			else if (_OnGround() && _map.mapData[x+1][y-1] == undefined && 
 				x != _map.width-2 && _map.mapData[x+2][y] == undefined &&
 				!_MeetingEntities(x+1, y) &&
-				!_MeetingEntities(x+2, y)
+				!_MeetingEntities(x+2, y) &&
+				_map.mapData[x+1][y].fallingBlock == undefined
 				)
 			{
 				pushingBlock = _map.mapData[x+1][y];
 				_map.disableFalling = true;
 				_map.mapData[x+1][y] = undefined;
 				pushingDir = 1;
+				audio_play_sound(snd_push, 0, 0);
 				x++;
 				frame++;
 				if (frame >= 2) frame = 0;
+				
+				pushingBlock.x = smoothX+pushingDir;
+				pushingBlock.y = smoothY;
 				return true;
 			}
 		}
@@ -274,15 +298,20 @@ function Player(xx=0,yy=0, type=1) constructor
 			else if (_OnGround() && _map.mapData[x-1][y-1] == undefined && 
 				x != 1 && _map.mapData[x-2][y] == undefined &&
 				!_MeetingEntities(x-1, y) &&
-				!_MeetingEntities(x-2, y))
+				!_MeetingEntities(x-2, y) &&
+				_map.mapData[x-1][y].fallingBlock == undefined)
 			{
 				pushingBlock = _map.mapData[x-1][y];
 				_map.disableFalling = true;
 				_map.mapData[x-1][y] = undefined;
 				pushingDir = -1;
+				audio_play_sound(snd_push, 0, 0);
 				x--;
 				frame++;
 				if (frame >= 2) frame = 0;
+				
+				pushingBlock.x = smoothX+pushingDir;
+				pushingBlock.y = y;
 				return true;
 			}
 		}
@@ -309,11 +338,18 @@ function Player(xx=0,yy=0, type=1) constructor
 		}
 	}
 	
+	static DrawBegin = function()
+	{
+		if (pushingBlock != undefined) pushingBlock.DrawBegin();
+		draw_sprite_shadow(sprite, frame, smoothX*TILESIZE+TILESIZE/2, smoothY*TILESIZE, facing, 1);
+	}
+	
 	static Draw = function()
 	{
 		if (pushingBlock != undefined) pushingBlock.Draw();
 		draw_sprite_ext(sprite, frame, smoothX*TILESIZE+TILESIZE/2, smoothY*TILESIZE,facing,1,0, type == 1 ? 0x4210b3 : 0x19b546, 1);
 	}
+	
 	
 	static Update = function()
 	{
@@ -321,7 +357,7 @@ function Player(xx=0,yy=0, type=1) constructor
 		if (pushingBlock != undefined)
 		{
 			pushingBlock.x = smoothX+pushingDir;
-			pushingBlock.y = smoothY;
+			pushingBlock.y = y;
 		}
 		
 		//input
@@ -382,10 +418,16 @@ function Player(xx=0,yy=0, type=1) constructor
 						//spring jump
 						_map.mapData[x][y+1].frame = 1;
 						_map.mapData[x][y+1].animationPlay = true;
+						_map.mapData[x][y+1].frameTimer = 0;
 						_MoveUp();
 						UpdateEnd();
 						_MoveUp();
 						
+						audio_play_sound(snd_spring, 0, 0);
+						audio_play_sound(snd_jump, 0, 0);
+						var _s = 2;
+						obj_camera.camera.x += random_range(-_s,_s);
+						obj_camera.camera.y += random_range(-_s,_s);
 						vinput = 0;
 					}
 					else if (_OnGround())
@@ -393,13 +435,15 @@ function Player(xx=0,yy=0, type=1) constructor
 						//normal jump
 						_MoveUp();
 						vinput = 0;
+						
+						audio_play_sound(snd_jump, 0, 0);
 					}
 				}
 				else
 				{
 					if (!_turnedInAir && hinput == 1)
 					{
-						_MoveRight();
+						var _moved = _MoveRight();
 						hinput = 0;
 						vinput = 0;
 						
@@ -408,11 +452,16 @@ function Player(xx=0,yy=0, type=1) constructor
 							flying = true;
 							flyDir = 1;
 							sprite = spr_player_fly;
+							if(_moved) audio_play_sound(snd_flap,0,0);
+						}
+						else if(_moved)
+						{
+							audio_play_sound(snd_footstep1,0,0);
 						}
 					}
 					else if (!_turnedInAir && hinput == -1)
 					{
-						_MoveLeft();
+						var _moved = _MoveLeft();
 						hinput = 0;
 						vinput = 0;
 						
@@ -421,6 +470,11 @@ function Player(xx=0,yy=0, type=1) constructor
 							flying = true;
 							flyDir = -1;
 							sprite = spr_player_fly;
+							if(_moved) audio_play_sound(snd_flap,0,0);
+						}
+						else if(_moved)
+						{
+							audio_play_sound(snd_footstep1,0,0);
 						}
 					}
 					else _MoveDown();
@@ -480,11 +534,19 @@ function FallingBlock(xx, yy, type = 1) constructor
 	_map.mapData[x][y] = collisionBlock;
 	
 	collidable = false;
+	hasFallen = false;
+	mute = false;
 	
 	static _OnGround = function()
 	{
 		var _map = obj_game.map;
 		return (y == _map.height-1 || _map.mapData[x][y+1] != undefined);
+	}
+	
+	static DrawBegin = function()
+	{
+		
+		
 	}
 	
 	static Draw = function()
@@ -508,12 +570,25 @@ function FallingBlock(xx, yy, type = 1) constructor
 					_map.mapData[x][y] = undefined;
 					y++;
 					_map.mapData[x][y] = collisionBlock;
+					hasFallen = true;
 				}
 				else
 				{
 					collisionBlock.x = x;
 					collisionBlock.y = y;
 					collisionBlock.updateDisabled = false;
+					collisionBlock.fallingBlock = undefined;
+					
+					if(hasFallen)
+					{
+						var _s = 1;
+						obj_camera.camera.x += random_range(-_s,_s);
+						obj_camera.camera.y += random_range(-_s,_s);
+						collisionBlock.flashAlpha = 1;
+						if(!mute) audio_play_sound(snd_block, 0, 0);
+					}
+					
+					//repeat(4) part_particles_create(global.PartSys, x*TILESIZE+random(TILESIZE),y*TILESIZE+TILESIZE*5, global.PartDustBlock, 1);
 					_map.RemoveEntity(self);
 				}
 			
@@ -554,9 +629,25 @@ function Block(type = 1) constructor
 	loop = type != 3;
 	animationPlay = false;
 	
+	fallingBlock = undefined;
+	
+	flashAlpha = 0;
+	
+	static DrawBegin = function()
+	{
+		draw_sprite_shadow(global.BlockSprites[blockType], frame, x*TILESIZE, y*TILESIZE);
+	}
+	
 	static Draw = function()
 	{
 		draw_sprite(global.BlockSprites[blockType], frame, x*TILESIZE, y*TILESIZE);
+		
+		if (flashAlpha > .1)
+		{
+			shader_set(sha_flash);
+				draw_sprite_ext(global.BlockSprites[blockType], frame, x*TILESIZE, y*TILESIZE, 1, 1, 0, 0x19b546, flashAlpha);
+			shader_reset();
+		}
 	}
 	
 	static Update = function()
@@ -578,6 +669,8 @@ function Block(type = 1) constructor
 			}
 		}
 		
+		flashAlpha = lerp(flashAlpha, 0, .5);
+		
 		if (!updateDisabled)
 		{
 			var _map = obj_game.map;
@@ -587,7 +680,9 @@ function Block(type = 1) constructor
 				_map.mapData[x][y] = undefined;
 				var _blk = new FallingBlock(x,y, blockType);
 				_map.AddEntity(_blk);
+				_blk.mute = true;
 				_blk.Update();
+				fallingBlock = _blk;
 			}
 		}
 	}
@@ -612,6 +707,11 @@ function Boss() constructor
 	dropX = x;
 	
 	collidable = false;
+	
+	static DrawBegin = function()
+	{
+		draw_sprite_shadow(spr_boss, 0, x*TILESIZE+TILESIZE/2, y*TILESIZE);	
+	}
 	
 	static Draw = function()
 	{
@@ -646,7 +746,7 @@ function Boss() constructor
 					var _blk = new FallingBlock(dropX,0, _t);
 					obj_game.map.AddEntity(_blk);
 					state = BossState.pickup;
-					
+					_blk.collisionBlock.fallingBlock = _blk;
 				}
 				
 				break;
@@ -656,6 +756,7 @@ function Boss() constructor
 				x = lerp(x, dropX,.02+_map.currentScore*0.000005);
 				y = lerp(y, -4, .02+_map.currentScore*0.000005);
 				
+				var _lastDropX = dropX;
 				if (y < -3.9)
 				{
 					
@@ -680,7 +781,7 @@ function Boss() constructor
 								return;
 							}
 						}
-						else
+						else if(dropX != _lastDropX)
 						{
 							break;
 						}
