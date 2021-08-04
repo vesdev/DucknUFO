@@ -26,7 +26,9 @@ part_type_direction(global.PartBgDust, 45, 135, 0, 0);
 part_type_speed(global.PartBgDust, .01, .05, 0, 0);
 part_type_color1(global.PartBgDust,0x5BC5F9);
 
-map = new Map(global.playerCount);
+map = new Map(global.playerCount, global.showTutorial);
+global.showTutorial = false; //dont show again after first attempt
+
 var _h = map.height*TILESIZE+64;
 
 

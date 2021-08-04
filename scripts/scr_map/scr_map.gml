@@ -1,7 +1,7 @@
 #macro TILESIZE 16
 
 
-function Map(players=1) constructor
+function Map(players=1, tutorial=true) constructor
 {
 	
 	x = 0;
@@ -28,7 +28,7 @@ function Map(players=1) constructor
 	
 	currentScore = 0;
 	
-	
+	inTutorial = tutorial;
 	lineAnimation = 0;
 	
 	var _i = 0; repeat(array_length(mapData))
@@ -53,6 +53,7 @@ function Map(players=1) constructor
 			draw_text_color(width/2*TILESIZE, -2*TILESIZE, string(currentScore), 0x4210b3,0x4210b3,0x4210b3,0x4210b3,1);
 		draw_set_halign(fa_left);
 		
+		
 		var _i = 0; 
 		repeat(width*height)
 		{
@@ -65,6 +66,18 @@ function Map(players=1) constructor
 		{ 
 			entities[_i].DrawBegin();
 			_i++;
+		}
+		
+		if (inTutorial)
+		{
+			draw_set_alpha(.8);
+				draw_rectangle_color(0,0, width*TILESIZE, height*TILESIZE, c_black, c_black, c_black, c_black, false);
+			draw_set_alpha(1);
+			
+			draw_set_halign(fa_center);
+				if (players == 1) draw_text_transformed(width/2*TILESIZE, height/2*TILESIZE, "Duck 'n\nUFO", .7, .7, 0);
+				if (players == 2) draw_text_transformed(width/2*TILESIZE, height/2*TILESIZE, "Ducks 'n\nUFO", .7, .7, 0);
+			draw_set_halign(fa_left);
 		}
 		
 		var _i = 0; 
@@ -136,7 +149,10 @@ function Map(players=1) constructor
 				if (_c == width){
 					var _i = 0;
 					repeat(width)
-					{
+					{	
+						var _b = new BgTile( global.BlockSprites[mapData[_i][height-1].blockType]);
+						_b.x = obj_camera.camera.x - obj_camera.camera.width/2 + _i/width*obj_camera.camera.width;
+						AddEntity(_b);
 						mapData[_i][height-1] = undefined;
 						_i++;
 					}
@@ -223,6 +239,8 @@ function Player(xx=0,yy=0, type=1) constructor
 	
 	collidable = true;
 	
+	tutorialJumpTimer = 10;
+	
 	static _MeetingEntities = function(xx,yy)
 	{
 		var _map = obj_game.map;
@@ -248,35 +266,38 @@ function Player(xx=0,yy=0, type=1) constructor
 		if (x < _map.width-1)
 		{
 			facing = 1;
-			if (_map.mapData[x+1][y] == undefined &&
-				!_MeetingEntities(x+1, y))
+			if (!_MeetingEntities(x+1, y))
 			{
-				x++;
-				frame++;
-				if (frame >= 2) frame = 0;
-				return true;
-			}
-			//push block
-			else if (_OnGround() && _map.mapData[x+1][y-1] == undefined && 
+				if (_map.mapData[x+1][y] == undefined || _map.mapData[x+1][y].blockType == 5)
+				{
+					x++;
+					frame++;
+					if (frame >= 2) frame = 0;
+					return true;
+				}
+				else if (_OnGround() && _map.mapData[x+1][y-1] == undefined && 
 				x != _map.width-2 && _map.mapData[x+2][y] == undefined &&
-				!_MeetingEntities(x+1, y) &&
 				!_MeetingEntities(x+2, y) &&
-				_map.mapData[x+1][y].fallingBlock == undefined
+				_map.mapData[x+1][y].fallingBlock == undefined &&
+				_map.mapData[x+1][y].blockType != 5
 				)
-			{
-				pushingBlock = _map.mapData[x+1][y];
-				_map.disableFalling = true;
-				_map.mapData[x+1][y] = undefined;
-				pushingDir = 1;
-				audio_play_sound(snd_push, 0, 0);
-				x++;
-				frame++;
-				if (frame >= 2) frame = 0;
+				{
+					pushingBlock = _map.mapData[x+1][y];
+					_map.disableFalling = true;
+					_map.mapData[x+1][y] = undefined;
+					pushingDir = 1;
+					audio_play_sound(snd_push, 0, 0);
+					x++;
+					frame++;
+					if (frame >= 2) frame = 0;
 				
-				pushingBlock.x = smoothX+pushingDir;
-				pushingBlock.y = smoothY;
-				return true;
+					pushingBlock.x = smoothX+pushingDir;
+					pushingBlock.y = smoothY;
+					return true;
+				}
+				
 			}
+			
 		}
 		return false;
 	}
@@ -287,33 +308,37 @@ function Player(xx=0,yy=0, type=1) constructor
 		if (x > 0)
 		{
 			facing = -1;
-			if (_map.mapData[x-1][y] == undefined &&
-				!_MeetingEntities(x-1, y))
+			if (!_MeetingEntities(x-1, y))
 			{
-				x--;
-				frame++;
-				if (frame >= 2) frame = 0;
-				return true;
-			}
-			else if (_OnGround() && _map.mapData[x-1][y-1] == undefined && 
-				x != 1 && _map.mapData[x-2][y] == undefined &&
-				!_MeetingEntities(x-1, y) &&
-				!_MeetingEntities(x-2, y) &&
-				_map.mapData[x-1][y].fallingBlock == undefined)
-			{
-				pushingBlock = _map.mapData[x-1][y];
-				_map.disableFalling = true;
-				_map.mapData[x-1][y] = undefined;
-				pushingDir = -1;
-				audio_play_sound(snd_push, 0, 0);
-				x--;
-				frame++;
-				if (frame >= 2) frame = 0;
+				if (_map.mapData[x-1][y] == undefined || _map.mapData[x-1][y].blockType == 5)
+				{
+					x--;
+					frame++;
+					if (frame >= 2) frame = 0;
+					return true;
+				}
+				else if (_OnGround() && _map.mapData[x-1][y-1] == undefined && 
+					x != 1 && _map.mapData[x-2][y] == undefined &&
+					!_MeetingEntities(x-2, y) &&
+					_map.mapData[x-1][y].fallingBlock == undefined &&
+					_map.mapData[x-1][y].blockType != 5
+					)
+				{
+					pushingBlock = _map.mapData[x-1][y];
+					_map.disableFalling = true;
+					_map.mapData[x-1][y] = undefined;
+					pushingDir = -1;
+					audio_play_sound(snd_push, 0, 0);
+					x--;
+					frame++;
+					if (frame >= 2) frame = 0;
 				
-				pushingBlock.x = smoothX+pushingDir;
-				pushingBlock.y = y;
-				return true;
+					pushingBlock.x = smoothX+pushingDir;
+					pushingBlock.y = y;
+					return true;
+				}
 			}
+			
 		}
 		return false;
 	}
@@ -360,33 +385,57 @@ function Player(xx=0,yy=0, type=1) constructor
 			pushingBlock.y = y;
 		}
 		
-		//input
-		if (type = 1)
+		#region //input
+		if (!_map.inTutorial)
 		{
-			if keyboard_check_pressed(vk_up) vinput = -1;
-		}
-		else
-		{
-			if keyboard_check_pressed(ord("W")) vinput = -1;
-			
-		}
-		
-		if (abs(x-smoothX) < .1)
-		{
-			var _in = 0;
 			if (type = 1)
 			{
-				_in = keyboard_check(vk_right)-keyboard_check(vk_left);
+				vinput = -keyboard_check_pressed(vk_up);
 			}
 			else
 			{
-				_in = keyboard_check(ord("D"))-keyboard_check(ord("A"));
+				vinput = -keyboard_check_pressed(ord("W"));
+			
 			}
 		
-			if(_in != 0)
+			if (abs(x-smoothX) < .1)
 			{
-				hinput = _in;
+				var _in = 0;
+				if (type = 1)
+				{
+					_in = keyboard_check(vk_right)-keyboard_check(vk_left);
+				}
+				else
+				{
+					_in = keyboard_check(ord("D"))-keyboard_check(ord("A"));
+				}
+		
+				if(_in != 0)
+				{
+					hinput = _in;
+				}
 			}
+		}
+		else
+		{
+			if(_map.mapData[x][y-2] != undefined)
+			{
+				tutorialJumpTimer--;
+				if(tutorialJumpTimer <= 0 )
+				{
+					vinput = -1;
+					_map.inTutorial = false;
+					tutorialJumpTimer = 0;
+				}
+			}
+		}
+		#endregion	
+		
+		//override when breaking a block directly above player
+		if(vinput == -1 && y > 0 && _map.mapData[x][y-1] != undefined)
+		{
+			y--;
+			_BreakBlock();
 		}
 		
 		//movement logic
@@ -492,22 +541,53 @@ function Player(xx=0,yy=0, type=1) constructor
 		
 	}
 	
+	static _BreakBlock = function()
+	{
+		var _map = obj_game.map;
+		if (_map.mapData[x][y] == undefined) return;
+		if (_map.mapData[x][y].blockType == 5) return; //ladder
+		if (_map.mapData[x][y].blockType == 2)
+		{
+			_map.disableUpdate = true;
+			_map.loser = type;
+			return;
+		}
+		
+		var _s = 5;
+		obj_camera.camera.x += random_range(-_s,_s);
+		obj_camera.camera.y += random_range(-_s,_s);
+		
+		
+		if(_map.mapData[x][y].blockType == 4 && y > 0)
+		{
+			if (x > 0)
+			{
+				_map.mapData[x-1][y-1] = undefined;
+				repeat(5) part_particles_create(global.PartSys, (x-1)*TILESIZE+TILESIZE/2,y*TILESIZE+TILESIZE*4, global.PartDust, 1);
+			}
+			if (x < _map.width-1)
+			{
+				_map.mapData[x+1][y-1] = undefined;
+				repeat(5) part_particles_create(global.PartSys, (x+1)*TILESIZE+TILESIZE/2,y*TILESIZE+TILESIZE*4, global.PartDust, 1);
+			}
+		}
+		
+		_map.mapData[x][y] = undefined;
+
+		repeat(5) part_particles_create(global.PartSys, x*TILESIZE+TILESIZE/2,y*TILESIZE+TILESIZE*4, global.PartDust, 1);
+		_MoveDown();
+	}
+	
 	static UpdateEnd = function()
 	{
 		var _map = obj_game.map;
 		if(_map.mapData[x][y] != undefined) 
 		{
-			if (!_OnGround() && _map.mapData[x][y].blockType != 2)
+			if (!_OnGround())
 			{
-				//break block
-				var _s = 5;
-				obj_camera.camera.x += random_range(-_s,_s);
-				obj_camera.camera.y += random_range(-_s,_s);
-				_map.mapData[x][y] = undefined;
-				repeat(5) part_particles_create(global.PartSys, x*TILESIZE+TILESIZE/2,y*TILESIZE+TILESIZE*4, global.PartDust, 1);
-				y++;
+				_BreakBlock();
 			}
-			else
+			else if(_map.mapData[x][y].blockType != 5)
 			{
 				_map.disableUpdate = true;
 				_map.loser = type;
@@ -611,7 +691,9 @@ global.BlockSprites = [
 	spr_empty,
 	spr_block_basic,
 	spr_block_unbreakable,
-	spr_block_spring
+	spr_block_spring,
+	spr_block_explosive,
+	spr_block_ladder
 ];
 
 function Block(type = 1) constructor
@@ -675,6 +757,15 @@ function Block(type = 1) constructor
 		{
 			var _map = obj_game.map;
 			
+			
+			if (blockType == 5 && y > 0 && _map.mapData[x][y-1] != undefined && _map.mapData[x][y-1].blockType != 5) 
+			
+			{
+				
+				_map.mapData[x][y] = undefined;
+				repeat(5) part_particles_create(global.PartSys, x*TILESIZE+TILESIZE/2,y*TILESIZE+TILESIZE*4, global.PartDust, 1);
+			}
+			
 			if (y < _map.height-1 && _map.mapData[x][y+1] == undefined)
 			{
 				_map.mapData[x][y] = undefined;
@@ -705,8 +796,33 @@ function Boss() constructor
 	state = BossState.pickup;
 	
 	dropX = x;
+	dropType = 0;
 	
 	collidable = false;
+	tutorialBlockDropped = false;
+	
+	curve = animcurve_get(ac_ufo);
+	curveChannel = curve.channels[0];
+	
+	animPos = 1;
+	
+	static _PickBlock = function()
+	{
+		var _map = obj_game.map;
+		//choose block type
+		var _t = 1;
+		if (_map.currentScore > 1000)
+		{
+			if (random(100) < 10) _t = 3;
+			else if (_map.currentScore > 3000)
+			{
+				if (random(100) < 30) _t = 2;
+				else if (random(100) < 25) _t = 5;
+			}
+		}
+		
+		return _t;
+	}
 	
 	static DrawBegin = function()
 	{
@@ -715,12 +831,28 @@ function Boss() constructor
 	
 	static Draw = function()
 	{
+		var _anim = animcurve_channel_evaluate(curveChannel, animPos);
 		
-		draw_sprite(spr_boss, 0, x*TILESIZE+TILESIZE/2, y*TILESIZE);
+		var _x = x*TILESIZE+TILESIZE/2;
+		var _y = y*TILESIZE;
+		var _dir = sin(current_time*0.01)*2+_anim*45;
+		
+		var _s = 1-y/-2;
+
+		draw_sprite_ext(global.BlockSprites[dropType], 0, x*TILESIZE+TILESIZE/2*(1.-_s), y*TILESIZE, _s, _s, 0, c_white, 1);
+
+		shader_set(sha_flash);
+			draw_sprite_ext(global.BlockSprites[dropType], 0, x*TILESIZE+TILESIZE/2*(1.-_s), y*TILESIZE, _s, _s, 0, 0x19b546, 1.-_s);
+		shader_reset();
+		
+		draw_sprite_ext(spr_boss, state == BossState.pickup, _x, _y, 1, 1, _dir, c_white, 1);
 	}
 	
 	static Update = function()
 	{
+		
+		animPos = min(1, animPos+.01);
+			
 		var _map = obj_game.map;
 		switch(state)
 		{
@@ -730,34 +862,32 @@ function Boss() constructor
 				
 				if (abs(dropX-x) < .1 && abs(y) < .1)
 				{
-					
-					//choose block type
-					var _t = 1;
-					if (_map.currentScore > 2000)
-					{
-						if (random(100) < 10) _t = 3;
-						else if (_map.currentScore > 5000)
-						{
-							if (random(100) < 30) _t = 2;
-						}
-					}
-					
-					
-					var _blk = new FallingBlock(dropX,0, _t);
+					var _blk = new FallingBlock(dropX,0, dropType);
 					obj_game.map.AddEntity(_blk);
+					animPos = 0;
 					state = BossState.pickup;
 					_blk.collisionBlock.fallingBlock = _blk;
+					dropType = 0;
 				}
 				
 				break;
 		
 			case BossState.pickup:
 				
-				x = lerp(x, dropX,.02+_map.currentScore*0.000005);
-				y = lerp(y, -4, .02+_map.currentScore*0.000005);
+				x = lerp(x, floor(_map.width/2),.02+_map.currentScore*0.000005);
+				y = lerp(y, -2, .02+_map.currentScore*0.000005);
 				
 				var _lastDropX = dropX;
-				if (y < -3.9)
+				if (!tutorialBlockDropped && _map.inTutorial)
+				{
+					dropX = floor(_map.width/2);
+					state = BossState.drop;
+					tutorialBlockDropped = true;
+					dropType = _PickBlock();
+					break;
+				}
+				
+				if (y < -1.9)
 				{
 					
 					while(true)
@@ -786,6 +916,7 @@ function Boss() constructor
 							break;
 						}
 					}
+					dropType = _PickBlock();
 					state = BossState.drop;
 				}
 				
@@ -799,3 +930,45 @@ function Boss() constructor
 
 	}
 }
+
+function BgTile(sprt) constructor
+{
+	var _map = obj_game.map;
+	x = 0
+	y = -5*TILESIZE;
+
+	collidable = false;
+	sprite = sprt;
+	
+	rotSpeed = random_range(.1,1);
+	moveSpeed = random_range(.1,1);
+	static DrawBegin = function()
+	{
+		var _off = TILESIZE/2;
+		var _ang = y*rotSpeed;
+		var _xx = x - dcos(_ang) * _off;
+		var _yy = y - dsin(_ang) * _off;
+		draw_sprite_ext(sprite, 0, _xx, _yy, .5, .5, _ang, c_white, 1);
+		
+		draw_sprite_ext(sprite, 0, _xx, _yy, .5, .5, _ang, 0x1A1113, .8);
+	}
+	
+	static Draw = function()
+	{
+
+	}
+	
+	static Update = function()
+	{
+		var _map = obj_game.map;
+		y+=moveSpeed;
+		if (y+32 > obj_camera.camera.height) _map.RemoveEntity(self);
+	}
+	
+	static UpdateEnd = function()
+	{
+
+	}
+}
+
+
