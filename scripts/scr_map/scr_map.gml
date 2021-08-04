@@ -811,10 +811,10 @@ function Boss() constructor
 		var _map = obj_game.map;
 		//choose block type
 		var _t = 1;
-		if (_map.currentScore > 1000)
+		if (_map.currentScore > 500)
 		{
 			if (random(100) < 10) _t = 3;
-			else if (_map.currentScore > 3000)
+			else if (_map.currentScore > 2000)
 			{
 				if (random(100) < 30) _t = 2;
 				else if (random(100) < 25) _t = 5;
@@ -838,6 +838,13 @@ function Boss() constructor
 		var _dir = sin(current_time*0.01)*2+_anim*45;
 		
 		var _s = 1-y/-2;
+		
+		if (state == BossState.drop)
+		{
+			draw_sprite_ext(global.BlockSprites[dropType], 0, dropX*TILESIZE, 0, 1, 1, 0, c_white, 1);
+			draw_sprite_ext(global.BlockSprites[dropType], 0, dropX*TILESIZE, 0, 1, 1, 0, 0x1A1113, .5);
+		}
+		
 
 		draw_sprite_ext(global.BlockSprites[dropType], 0, x*TILESIZE+TILESIZE/2*(1.-_s), y*TILESIZE, _s, _s, 0, c_white, 1);
 

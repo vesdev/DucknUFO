@@ -33,7 +33,6 @@
     {"id":{"name":"spr_concept","path":"sprites/spr_concept/spr_concept.yy",},"order":10,},
     {"id":{"name":"spr_empty","path":"sprites/spr_empty/spr_empty.yy",},"order":6,},
     {"id":{"name":"init","path":"scripts/init/init.yy",},"order":2,},
-    {"id":{"name":"spr_asteroid","path":"sprites/spr_asteroid/spr_asteroid.yy",},"order":13,},
     {"id":{"name":"spr_block_explosive","path":"sprites/spr_block_explosive/spr_block_explosive.yy",},"order":11,},
     {"id":{"name":"scr_map","path":"scripts/scr_map/scr_map.yy",},"order":0,},
   ],
