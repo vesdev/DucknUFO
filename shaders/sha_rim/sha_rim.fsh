@@ -11,7 +11,7 @@ const highp vec2 light = vec2(-1,-1);
 const highp float rimSize = 1.;
 
 const highp vec4 col = vec4(70./255.,181./255.,25./255.,1.);
-const highp float alpha = 1.;
+const highp float alpha = .7;
 void main()
 {
     vec4 rim_col = vec4(0);
@@ -45,14 +45,14 @@ void main()
         }
     }
 	
-	rim_col = ceil(max(vec4(0.), rim_col))*col*alpha;
-	
+	rim_col = ceil(max(vec4(0.), rim_col))*col;
+	//rim_col = rim_col*col*alpha;
 	highp vec4 shadow = vec4(0,0,0,1);
-	for(float i = 4.; i > 0.; i-=1.)
+	for(float i = 16.; i > 0.; i-=1.)
 	{
-		shadow.a -= (1.-texture2D(gm_BaseTexture, v_vTexcoord-texel*i).a)*.25;
+		shadow.a -= (1.-texture2D(gm_BaseTexture, v_vTexcoord-texel*i).a)*(1./16.);
 	}
-	shadow.a = ceil(max(0., shadow.a));
+	shadow.a = ceil(max(0., shadow.a))*alpha;
 	
     gl_FragColor = shadow+texture2D(gm_BaseTexture, v_vTexcoord)+rim_col;
 }

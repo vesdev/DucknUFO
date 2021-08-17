@@ -1,6 +1,6 @@
 {
   "compression": 1,
-  "volume": 1.0,
+  "volume": 0.4,
   "preload": false,
   "bitRate": 128,
   "sampleRate": 44100,
@@ -10,14 +10,14 @@
     "name": "audiogroup_default",
     "path": "audiogroups/audiogroup_default",
   },
-  "soundFile": "snd_block.mp3",
-  "duration": 0.182825,
+  "soundFile": "snd_break.mp3",
+  "duration": 0.4963,
   "parent": {
     "name": "Sounds",
     "path": "folders/Sounds.yy",
   },
   "resourceVersion": "1.0",
-  "name": "snd_block",
+  "name": "snd_break",
   "tags": [],
   "resourceType": "GMSound",
 }

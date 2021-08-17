@@ -1,6 +1,6 @@
 {
   "compression": 1,
-  "volume": 0.4,
+  "volume": 1.0,
   "preload": false,
   "bitRate": 128,
   "sampleRate": 44100,
@@ -11,7 +11,7 @@
     "path": "audiogroups/audiogroup_default",
   },
   "soundFile": "snd_line.mp3",
-  "duration": 1.01875,
+  "duration": 2.0114,
   "parent": {
     "name": "Sounds",
     "path": "folders/Sounds.yy",

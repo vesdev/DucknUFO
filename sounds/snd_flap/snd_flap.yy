@@ -1,6 +1,6 @@
 {
   "compression": 1,
-  "volume": 0.8,
+  "volume": 0.4,
   "preload": false,
   "bitRate": 128,
   "sampleRate": 44100,
@@ -11,7 +11,7 @@
     "path": "audiogroups/audiogroup_default",
   },
   "soundFile": "snd_flap.mp3",
-  "duration": 0.182825,
+  "duration": 0.313425,
   "parent": {
     "name": "Sounds",
     "path": "folders/Sounds.yy",

@@ -3,7 +3,6 @@
 
 function Map(players=1, tutorial=true) constructor
 {
-	
 	x = 0;
 	y = 64;
 	width = 5;
@@ -25,7 +24,7 @@ function Map(players=1, tutorial=true) constructor
 		0,0,1,0,
 		0,0,0,1,
 	];
-	
+
 	currentScore = 0;
 	
 	inTutorial = tutorial;
@@ -107,23 +106,37 @@ function Map(players=1, tutorial=true) constructor
 		draw_sprite_rectangle(-1,0, width*TILESIZE, height*TILESIZE-1, 0x4210b3, true);
 		
 		draw_set_halign(fa_center);
-		
+		draw_set_valign(fa_middle);
 		if(disableUpdate)
 		{	
+			if (global.highscore < currentScore) global.highscore = currentScore;
+			
 			draw_set_alpha(.8);
 			draw_rectangle_color(0,0, width*TILESIZE, height*TILESIZE, c_black, c_black, c_black, c_black, false);
 			draw_set_alpha(1);
 			if (players = 1)
 			{
-				draw_text_transformed(width/2*TILESIZE, height/2*TILESIZE, "Score:\n" + string(currentScore) + "\nR to restart", .7, .7, 0);
+				if (MOBILE)
+				{
+					draw_text_transformed(width/2*TILESIZE, height/2*TILESIZE, "Score:\n" + string(currentScore) + "\nRecord:\n" + string(global.highscore) + "\nClick to restart", .7, .7, 0);
+					if(mouse_check_button_pressed(mb_left)) room_restart();
+				}
+				else
+				{
+					draw_text_transformed(width/2*TILESIZE, height/2*TILESIZE, "Score:\n" + string(currentScore) + "\nRecord:\n" + string(global.highscore) + "\nR to restart", .7, .7, 0);
+				}
 			}
 			else
 			{
 				var _base = loser == 0 ? "Tie" : (loser == 1 ? "Green Won" : "Red Won");
+				
 				draw_text_transformed(width/2*TILESIZE, height/2*TILESIZE, _base + "\nScore:\n" + string(currentScore) + "\n R to restart", .7, .7, 0);
 			}
+			
+			
 		}
 		draw_set_halign(fa_left);
+		draw_set_valign(fa_top);
 		matrix_set(matrix_world, _mat);
 		
 	}
@@ -390,7 +403,8 @@ function Player(xx=0,yy=0, type=1) constructor
 		{
 			if (type = 1)
 			{
-				vinput = -keyboard_check_pressed(vk_up);
+				vinput = -(keyboard_check_pressed(vk_up));
+				if(MOBILE) vinput = -obj_game.dragUp;
 			}
 			else
 			{
@@ -404,6 +418,7 @@ function Player(xx=0,yy=0, type=1) constructor
 				if (type = 1)
 				{
 					_in = keyboard_check(vk_right)-keyboard_check(vk_left);
+					if(MOBILE) _in = obj_game.dragRight-obj_game.dragLeft;
 				}
 				else
 				{
@@ -573,9 +588,10 @@ function Player(xx=0,yy=0, type=1) constructor
 		}
 		
 		_map.mapData[x][y] = undefined;
-
+		
 		repeat(5) part_particles_create(global.PartSys, x*TILESIZE+TILESIZE/2,y*TILESIZE+TILESIZE*4, global.PartDust, 1);
 		_MoveDown();
+		audio_play_sound(snd_break, 0, 0);
 	}
 	
 	static UpdateEnd = function()

@@ -1,6 +1,6 @@
 {
   "compression": 1,
-  "volume": 1.0,
+  "volume": 0.3,
   "preload": false,
   "bitRate": 128,
   "sampleRate": 44100,
@@ -11,7 +11,7 @@
     "path": "audiogroups/audiogroup_default",
   },
   "soundFile": "snd_footstep1.mp3",
-  "duration": 1.01875,
+  "duration": 0.3918,
   "parent": {
     "name": "Sounds",
     "path": "folders/Sounds.yy",

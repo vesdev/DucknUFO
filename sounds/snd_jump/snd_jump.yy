@@ -1,6 +1,6 @@
 {
   "compression": 1,
-  "volume": 0.4,
+  "volume": 0.1,
   "preload": false,
   "bitRate": 128,
   "sampleRate": 44100,
@@ -11,7 +11,7 @@
     "path": "audiogroups/audiogroup_default",
   },
   "soundFile": "snd_jump.mp3",
-  "duration": 0.2612,
+  "duration": 0.313425,
   "parent": {
     "name": "Sounds",
     "path": "folders/Sounds.yy",
